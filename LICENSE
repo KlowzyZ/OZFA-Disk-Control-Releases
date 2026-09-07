@@ -1,0 +1,88 @@
+OZFA DISK CONTROL
+END USER LICENCE AGREEMENT
+
+Copyright (c) 2026 KLOWZY. All rights reserved.
+
+OZFA Disk Control is proprietary software. It is not open source. The source code is not
+published, and no right to it is granted by this licence or by possession of the software.
+
+By installing, copying or using OZFA Disk Control you agree to the terms below. If you do not
+agree to them, do not install or use it.
+
+1. LICENCE GRANTED
+
+   KLOWZY grants you a non-exclusive, non-transferable, revocable licence to install and use the
+   official OZFA Disk Control binaries:
+
+   a. on any number of computers you own or administer;
+   b. for personal use and for the internal business use of your organisation, including use in a
+      commercial computer repair or IT service business;
+   c. including use of the portable edition from removable media you carry between machines.
+
+   You may make copies of the unmodified official binaries for backup and for deployment within
+   your own organisation.
+
+2. RESTRICTIONS
+
+   You may not:
+
+   a. sell, rent, lease, sublicence, or distribute the software to anyone outside your
+      organisation, or make it available for download by others;
+   b. bundle it with, or offer it as part of, any product or service you sell;
+   c. reverse engineer, decompile or disassemble it, except to the extent that applicable law
+      expressly permits this despite this limitation;
+   d. modify, adapt or create derivative works from it;
+   e. remove or alter the product name, the copyright notices, or the attribution shown in the
+      application or its documentation;
+   f. use the OZFA or KLOWZY names or marks to endorse or promote anything without written
+      permission.
+
+3. OWNERSHIP
+
+   OZFA Disk Control is licensed, not sold. KLOWZY retains all right, title and interest in it,
+   including all intellectual property rights. All rights not expressly granted here are reserved.
+
+4. NO WARRANTY
+
+   THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+   PURPOSE AND NONINFRINGEMENT.
+
+5. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL KLOWZY BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THIS
+   SOFTWARE OR THE USE OR OTHER DEALINGS IN THIS SOFTWARE.
+
+   This applies in particular to data loss. OZFA Disk Control can perform operations that destroy
+   data on a disk. It refuses to target the Windows system disk, refuses to target protected
+   partitions, shows the full identity of any device before acting on it, and requires explicit
+   confirmation — but the responsibility for choosing a target, and for having a backup, is
+   yours.
+
+   Real destructive execution has not yet been verified against physical hardware. See the
+   release notes.
+
+6. THIRD-PARTY COMPONENTS
+
+   This software includes third-party libraries used under their own licences. See
+   THIRD-PARTY-NOTICES.md, which is distributed with the software.
+
+7. HARD DISK SENTINEL
+
+   Hard Disk Sentinel is a separate commercial product, by a different author. It is not bundled
+   with OZFA Disk Control, not installed by it, and not redistributed by it, and it is not covered
+   by this licence. Using OZFA Disk Control's advanced health features requires your own
+   legitimate Hard Disk Sentinel Professional licence.
+
+8. TERMINATION
+
+   This licence ends automatically if you breach it. On termination you must stop using the
+   software and remove it from your systems.
+
+9. PRIVACY
+
+   OZFA Disk Control collects no telemetry and sends nothing anywhere by default. The only
+   outbound connections it can make are to a shared library server whose address you enter
+   yourself, and to the public releases feed to check for a newer version. Neither is enabled with
+   any personal data, and neither sends anything about you, your machine or your disks.

@@ -1,0 +1,16 @@
+﻿# This repository holds releases and public documentation only. No source code, and no binaries
+# in Git history — installers and archives are published as GitHub Release assets, where they can
+# be replaced without rewriting history and do not have to be cloned by anyone who only wants to
+# read the notes.
+*.exe
+*.zip
+*.msi
+SHA256SUMS.txt
+
+# Nothing the application writes belongs here.
+*.db
+*.db-shm
+*.db-wal
+*.log
+logs/
+Data/
