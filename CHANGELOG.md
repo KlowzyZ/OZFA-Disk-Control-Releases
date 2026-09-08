@@ -1,5 +1,85 @@
 # Changelog
 
+## 1.2.0 — 2026-09-09
+
+Three problems found while using 1.1 on the bench. Nothing else changed.
+
+### Fixed
+
+- **A secondary disk was refused simply for containing an old Windows.** Protection was decided by
+  what a disk looked like: any EFI System Partition, Microsoft Reserved Partition or recovery
+  partition made the whole disk untouchable. A technician's second disk is usually a disk pulled
+  out of another computer and carries exactly those, so the disk that most needed erasing was the
+  one the application would not touch.
+
+  Protection is now decided by a single question — **does the Windows installation that is running
+  right now depend on this disk?** The boot disk, the system disk, the volume Windows is running
+  from, any partition holding an active page file or hibernation state, and the recovery partition
+  Windows itself names all still protect their disk absolutely, and no confirmation can unlock
+  them. A partition *type* on a disk nothing on this machine uses no longer refuses anything: it
+  produces a warning that names what is about to be destroyed, including the mounted volumes and
+  the fact that another computer may stop starting.
+
+  The two verdicts are now said in two different sets of words, because collapsing them was half
+  the problem. **PROTECTED** means the application refuses. **DESTRUCTIVE WARNING** means it will
+  proceed and the data will be gone. Identity checking is unchanged and still fails closed: a
+  device with no trustworthy serial, no capacity or an unreadable partition table is refused, and
+  the target is re-resolved and re-judged immediately before anything is written.
+
+- **Needing administrator rights was presented as though the disk were protected.** Disk
+  management requires an elevated process, and a refusal for that reason read like a safety
+  verdict about the drive. It is now reported as what it is, and the page offers **Continue as
+  administrator**, which restarts the application elevated and reopens the same device.
+
+  The plan does not travel. Only the device's identity does — the elevated copy re-reads the
+  machine, re-evaluates protection, and asks for the plan to be reviewed and confirmed again,
+  because the device list can change while the consent prompt is on screen. Dry runs continue to
+  work without elevation, exactly as before.
+
+- **A disk plugged in while the application was running could show "No health data".** Windows
+  publishes a device as soon as the bus enumerates it, which for some drives is before Hard Disk
+  Sentinel has finished its own scan — so the disk appeared complete in every respect except its
+  health, and pressing Rescan a few seconds later fixed it.
+
+  The application now waits that race out by itself: for a newly connected device only, it re-asks
+  the health provider five times over nineteen seconds and stops the moment a reading arrives. It
+  re-asks the provider, not the machine — discovery is not re-run — and a device that has been
+  attached for a while is never re-asked about, so this can never become a permanent poll. History
+  and alerting sit out the wait, so a reading that was merely late does not become a "health data
+  disappeared, then came back" pair in the disk's history or an alert about nothing.
+
+### Changed
+
+- **Disks in USB adapters are now named after the drive, not the adapter.** Some adapters answer
+  the Windows storage stack with the bridge chipset's own product string, or with a placeholder as
+  bare as `0`, while Hard Disk Sentinel reads the drive's real identity through the same adapter.
+  Where a health reading has already been correlated to the device, the drive's model — and its
+  serial and firmware where the adapter clearly supplied neither — is what the disk list, the
+  header, the Overview page and the report now show, with the enclosure named alongside it.
+
+  The substitution is display only, and narrow: it happens only for a device reached through an
+  enclosure, only where a reading was already matched to it, and only where what Windows reported
+  is recognisably not a drive model and what the provider reported is. A drive that names itself
+  is never renamed. Everything that decides *which device is which* — correlation, history, and
+  the check that runs immediately before a destructive operation — continues to use the identity
+  Windows reported, and the Tools page keeps showing that identity so the confirmation always
+  displays the identity it is actually checking.
+
+### Not verified on hardware
+
+Honest about what this release has and has not been run against:
+
+- The protection rules were verified on a real two-disk machine: the system/boot disk is refused
+  with its dependencies named, and a secondary NVMe carrying a leftover Microsoft Reserved
+  Partition and a mounted volume is now correctly allowed with a warning that names both.
+- The USB-adapter identity change and the hot-plug retry are covered by tests, but the development
+  machine has no USB-to-SATA adapter attached, so neither has been seen working against a real
+  bridge. The behaviour with a specific adapter depends on what that adapter publishes.
+- No real format or repartition has been executed against a disposable disk. Planning, the safety
+  checks, the confirmation flow and the dry run are complete and tested; the moment the backend
+  actually writes has still only been exercised against a test backend. The Tools page says so
+  where the choice is made.
+
 ## 1.1.0 — 2026-09-08
 
 ### Fixed

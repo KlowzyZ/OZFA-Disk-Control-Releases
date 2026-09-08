@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.1.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.2.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 [**Download the latest release**](../../releases/latest)
 
@@ -63,8 +63,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.1.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.1.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.2.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.2.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -78,7 +78,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.1.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.2.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`.
@@ -107,12 +107,22 @@ device is detected but has no health data.
 This application can destroy data. Everything below is enforced in code and covered by tests:
 
 - The Windows **system and boot disk is never a destructive target**.
-- **EFI, reserved and recovery partitions are protected**, on any disk.
+- **Anything the running Windows depends on is protected**, wherever it lives: the volume Windows
+  is running from, the system partition the firmware booted, an active page file or hibernation
+  file, and the recovery partition Windows itself names. No confirmation unlocks them.
+- **A disk is not protected merely for looking like a system disk.** An old Windows installation, a
+  Microsoft Reserved Partition, an old EFI or recovery partition from another computer — none of
+  those is anything this machine uses, and a secondary disk carrying them can be erased after an
+  explicit confirmation. What they earn is a warning naming exactly what is about to be destroyed.
 - **A drive letter alone never selects a target.** Identity is resolved to a physical device.
 - Every destructive plan is **shown in full** — model, serial, capacity, physical disk number and
   the affected partitions — and **confirmed explicitly** before anything is written.
-- The target is **re-checked against the device immediately before execution**.
+- The target is **re-checked against the device immediately before execution**, including whether
+  the running Windows has come to depend on it since the plan was built.
 - **An ambiguous identity fails closed**, never open.
+- **Needing administrator rights is never reported as protection.** It is a separate state with its
+  own way out — *Continue as administrator* restarts the application elevated and reopens the same
+  device, then asks for the plan to be built and confirmed again against a fresh scan.
 - The shared library **only ever receives records**. Nothing on a network can start an operation,
   run a test or reach a disk on this machine.
 
@@ -120,9 +130,12 @@ This application can destroy data. Everything below is enforced in code and cove
 >
 > The planner, the safety checks, the confirmation flow and the dry run are complete and covered by
 > tests. A **real format or repartition has so far only been executed against a test backend**,
-> because both disks in the development machine hold protected roles and no disposable disk was
-> available. The application says so at the point a real run is chosen. Treat a real run as
-> unproven, and use a disk you can afford to lose.
+> because no disposable disk was available during development. The application says so at the point
+> a real run is chosen. Treat a real run as unproven, and use a disk you can afford to lose.
+>
+> The 1.2 protection rules themselves were checked against real hardware: the system and boot disk
+> is refused with its dependencies named, and a secondary disk carrying a leftover Microsoft
+> Reserved Partition and a mounted volume is allowed with a warning naming both.
 
 ## Privacy
 
