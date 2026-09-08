@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.0.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.1.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 [**Download the latest release**](../../releases/latest)
 
@@ -63,8 +63,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.0.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.0.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.1.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.1.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -78,7 +78,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.0.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.1.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`.
@@ -126,15 +126,19 @@ This application can destroy data. Everything below is enforced in code and cove
 
 ## Privacy
 
-**Nothing leaves your machine unless you configure it to.** There is no telemetry, no analytics, no
-crash reporting and no network traffic of any kind in the default configuration.
+**Nothing about you or your hardware leaves your machine.** There is no telemetry, no analytics
+and no crash reporting.
 
 There are exactly two outbound connections the application can ever make:
 
+- **The update check**, to this repository's public releases feed. This one **is on by default** —
+  shortly after start-up, and once a day after that. The request carries the running version
+  number and nothing else: no machine name, no user name, no identifier of any kind, and nothing
+  whatsoever about your disks. It reads a version number and stops there; it **cannot download an
+  update, cannot install one, and cannot run anything**. Opening a release happens in your own
+  browser. Turn it off entirely in Settings → Updates; everything else works with no network at
+  all.
 - **The shared library**, to a server address you type in yourself. Off by default.
-- **The update check**, to this repository's public releases feed. It sends nothing but a request
-  for the list of releases — no identifier, no machine name, nothing about your disks — and it
-  **cannot download or install anything**. Opening a release happens in your own browser.
 
 Everything the application records — disk identities, inspections, SMART snapshots, alerts, test
 results and the disk-operation audit trail — is stored locally in a SQLite database, under your

@@ -1,6 +1,55 @@
 # Changelog
 
-## 1.0.0 — 2026-09-06
+## 1.1.0 — 2026-09-07
+
+### Fixed
+
+- **Disks in USB adapters and docks showed "No health data".** A USB-to-SATA/NVMe bridge answers
+  the Windows storage stack on the drive's behalf and reports the serial number baked into the
+  adapter rather than the one printed on the drive, while Hard Disk Sentinel reaches past the
+  bridge and reports the real one. One device therefore presented two unrelated serials, and the
+  rule that two different serials prove two different devices — correct for a directly attached
+  disk — threw the reading away before the model or the capacity was ever looked at. Health,
+  temperature, performance and the SMART table now appear for externally attached disks.
+
+  Adapters that go further and publish the bridge chipset's own name as the model, leaving nothing
+  in the record that describes the drive, are handled by a last-resort pass over the health
+  provider's own device numbering — but only after that numbering has been proved against the
+  disks in the same scan that matched on their own identity. Capacity is only ever a veto, never
+  the evidence.
+
+  Safety is unchanged. A reading matched this way is labelled in the interface as matched on
+  limited evidence, and can never authorize a format or a repartition: those still require a
+  unique identifier. Two disks that cannot be told apart leave both readings unattached, because
+  showing one disk's health under another disk's name would be worse than showing none.
+
+- **Correlation failures are now explained in the log.** "No health data" looked identical whether
+  the provider never saw the disk, saw it and rejected it on an identifier, or matched two disks
+  equally well and dropped the reading as ambiguous. Each is now a different sentence naming which
+  fields disagreed — never what they contained.
+
+### Changed
+
+- **A sign-in launch now stays in the notification area by default.** Asking Windows to start
+  something when you sign in is a request for it to be watching, not a request for a window in
+  front of whatever you signed in to do. Monitoring, history capture, alerting and hot-plug
+  detection run exactly as before; starting the application yourself still shows the window. An
+  existing installation keeps whatever it was already set to. The choice is also now disabled
+  until "start when I sign in" is switched on, since it has nothing to decide before then.
+
+- **Corrected the update and privacy documentation.** The 1.0.0 notes said no update repository was
+  configured, which was already untrue of the published build. Automatic checking is on by default
+  and contacts GitHub for this product's list of releases; it sends no machine, user or disk
+  information, and it cannot download or install anything.
+
+### Known limitation
+
+- The USB correlation fix has **not yet been confirmed against real bridge hardware** — none was
+  available on the build machine. It is covered by tests and is fail-closed by construction: it
+  suspends a disproof and can never raise a match to the confidence a destructive operation
+  requires. If your adapter still reports no health data, the log now says which fields disagreed.
+
+## 1.0.0 — 2026-09-07
 
 The first public release.
 
@@ -52,9 +101,8 @@ The first public release.
 - **An update checker.** About shows the installed version, the status, when it last checked, and
   a Check for updates button; Settings gains an Updates category. It reads a version number and
   nothing else — it cannot download or install, and opening a release happens in your browser.
-  Automatic checking is on by default, once a day, stable releases only, and no repository is
-  configured in this build, so it reports "Update source not configured" rather than pretending to
-  be current.
+  Automatic checking is on by default, once a day, stable releases only, and one notification per
+  new version rather than one per check.
 
 ### Fixed
 
