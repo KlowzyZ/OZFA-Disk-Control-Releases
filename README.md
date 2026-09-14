@@ -6,7 +6,7 @@
 
 Version 1.2.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
-[**Download the latest release**](../../releases/latest)
+Published installers and checksums are available as GitHub Release assets in this repository.
 
 </div>
 
