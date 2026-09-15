@@ -67,5 +67,5 @@ you choose a real run. Use a disk you can afford to lose.
 
 ---
 
-`READ-ME-FIRST.md` · OZFA Disk Control v1.2.0 · KLOWZY · see `LICENSE` and
+`READ-ME-FIRST.md` · OZFA Disk Control v1.3.0 · KLOWZY · see `LICENSE` and
 `THIRD-PARTY-NOTICES.md`

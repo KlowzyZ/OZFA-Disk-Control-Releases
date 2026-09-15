@@ -1,5 +1,92 @@
 # Changelog
 
+## 1.3.0 — 2026-09-10
+
+Two problems found using 1.2 on the bench, one of them serious.
+
+### Fixed
+
+- **A swapped-in disk could briefly show the health of the disk it replaced.** With two drives in a
+  dock, taking both out and putting two different ones in produced, for a few seconds, the old
+  drives' health figures sitting under the new drives. A manual Rescan corrected it.
+
+  Three things lined up to cause it. Windows publishes the new devices within a second or two and
+  hands them the disk numbers the old ones had. Hard Disk Sentinel scans on its own schedule, so it
+  is still describing the drives that were pulled out — and nothing inside those records marks them
+  as stale, because every field in them is a real reading of real hardware. And a dock that answers
+  for its drives gives both bays the same product string and no serial, which leaves the health
+  provider's own device numbering as the only thing left to match on. Correct evidence, correct
+  numbering, wrong drives.
+
+  The application now keeps track of which health record it put on which disk, and of exactly what
+  the provider was publishing at the time. When the machine changes — the device list differs, or
+  Windows reports a storage arrival or removal — a record that a disk was wearing before the change
+  is held back for as long as the provider's output has not moved, because output that has not moved
+  is a provider that has not looked again. While anything is held back, matching a disk by the
+  provider's device number is switched off entirely, since position is precisely the evidence that
+  goes wrong across a swap.
+
+  Holding a record back is not throwing it away: a serial or a unique identifier agreeing is proof
+  the same device is back, and proof still wins. A drive unplugged and plugged into another port
+  keeps its own reading, and so does every disk that reports a serial of its own. The hold is
+  scoped to records worn by a disk that is either gone or indistinguishable from a replacement —
+  a machine's internal disks are not affected by a USB stick being plugged in.
+
+  Every state the application publishes now carries a number identifying the set of devices it
+  describes, and a state describing a set that has already been replaced is dropped rather than
+  displayed. That closes the last gap: an answer about the previous machine arriving after the new
+  one is on screen.
+
+- **A disk being waited on now says so, instead of reporting no health data.** "No health data" is a
+  verdict about a drive. A device attached three seconds ago that is still being asked about has not
+  earned one, and a technician who reads it as a verdict puts a working disk on the reject pile.
+  Those devices now read **Detecting health data…** until the answer arrives or the attempt is over.
+
+### Changed
+
+- **The wait for a health provider to catch up is longer, and it starts after a swap as well as
+  after an arrival.** What is really being waited on is the provider's own scan interval, which is
+  measured in tens of seconds, so the backoff now runs nine attempts across a minute rather than
+  five across nineteen seconds, and stops the moment the answer arrives. It re-asks the provider,
+  not the machine: discovery is not re-run, a device that has been attached for a while is never
+  re-asked about, and the retry is abandoned outright if the machine changes underneath it. When it
+  ends without an answer, the device reports no health data — which by then is the truth.
+
+  History capture and alerting continue to sit the wait out, so a reading that was merely late does
+  not become a "health data disappeared, then came back" pair in a disk's history or an alert about
+  nothing.
+
+- **Disks behind a USB adapter are now named after the drive even when the adapter's name looks
+  plausible.** In 1.2 the drive's real model was substituted only when what Windows reported was
+  obviously not a model — empty, numeric, or a bridge chipset's name. That missed the case this was
+  reported for: the same two-bay dock passes both real models through with two disks in it, and
+  reports its own perfectly ordinary-looking product name with one disk in it. "Does the Windows
+  name look plausible" is therefore not a usable test.
+
+  Where a health record has been correlated to a device behind an enclosure and that record names
+  real media, the record now wins — it was read from the drive, while Windows read whatever answered
+  on the bus. The one exception is a provider model that is merely a shortened form of the one
+  Windows already has, since providers routinely clip the field (Hard Disk Sentinel stops at
+  twenty-five characters) and trading a complete name for a truncated one describing the same drive
+  would be a loss dressed up as a fix. The enclosure is still named alongside the drive.
+
+  Nothing about this changes which device is which: correlation, history and the check that runs
+  immediately before a destructive operation all continue to use the identity Windows reported, and
+  the Tools page keeps displaying that identity so a confirmation always shows the identity it is
+  actually checking.
+
+### Not verified on hardware
+
+- The stale-health fix, the retry and the adapter naming are covered by tests that reproduce the
+  reported scenarios against constructed machines — including the swap where the two device lists
+  are indistinguishable from each other. **None of it has been run against a real dock**: the
+  development machine has no USB-to-SATA adapter, and Hard Disk Sentinel could not be started
+  during this build, so no live correlation was exercised at all. What a specific dock publishes,
+  and how long a specific Sentinel installation takes to rescan, decide what you will actually see.
+- **No real format or repartition has been executed against a disposable disk.** Unchanged from
+  1.2: planning, the safety checks, the confirmation flow and the dry run are complete and tested;
+  the moment the backend writes has only ever been exercised against a test backend.
+
 ## 1.2.0 — 2026-09-09
 
 Three problems found while using 1.1 on the bench. Nothing else changed.

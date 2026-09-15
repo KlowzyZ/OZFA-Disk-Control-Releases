@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.2.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.3.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 Published installers and checksums are available as GitHub Release assets in this repository.
 
@@ -63,8 +63,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.2.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.2.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.3.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.3.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -78,7 +78,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.2.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.3.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`.
@@ -101,6 +101,28 @@ tests, surface scans, benchmarks, reports, history of what it can see, the share
 disk tools. Health readings are reported as unavailable rather than guessed. The Diagnostics page
 shows exactly what the provider returned, field by field, which is the first place to look when a
 device is detected but has no health data.
+
+### Plugging in and swapping disks
+
+Hard Disk Sentinel scans on its own schedule, so after a disk is plugged in or swapped it can take
+several seconds to describe the new hardware. OZFA Disk Control waits for it rather than guessing:
+
+- **A disk being waited on reads "Detecting health data…"**, not "No health data". The application
+  keeps asking for up to about a minute and stops the moment a reading arrives. If none does, the
+  disk then reports no health data.
+- **A reading from a disk that has been removed is never shown on the disk that replaced it.** When
+  drives are swapped in a dock, Windows gives the new drives the disk numbers the old ones had while
+  Hard Disk Sentinel is still describing the old ones. Those readings are held back until it has
+  rescanned. A drive that reports its own serial number keeps its reading throughout, including when
+  it is moved to a different port.
+- **Disks in a USB adapter or dock are named after the drive**, as Hard Disk Sentinel reads it, even
+  when the adapter reports a plausible-looking name of its own. The adapter is shown alongside. This
+  is display only: which disk a destructive operation targets is always decided by the identity
+  Windows reports, and the Tools page shows that identity.
+
+These behaviours are covered by automated tests that reproduce the reported scenarios, but they have
+**not yet been verified against a real dock or USB adapter**. What a particular dock reports, and how
+quickly a particular Hard Disk Sentinel installation rescans, decide what you will actually see.
 
 ## Safety
 
