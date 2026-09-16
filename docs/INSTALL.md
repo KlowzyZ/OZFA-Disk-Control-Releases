@@ -5,7 +5,7 @@ the only difference is where they keep their data.
 
 | | Installer | Portable |
 | --- | --- | --- |
-| File | `OZFA-Disk-Control-v1.3.0-Setup.exe` | `OZFA-Disk-Control-v1.3.0-Portable.zip` |
+| File | `OZFA-Disk-Control-v1.4.0-Setup.exe` | `OZFA-Disk-Control-v1.4.0-Portable.zip` |
 | Installs to | `C:\Program Files\OZFA Disk Control` | wherever you unzip it |
 | Data, settings and logs | `%LOCALAPPDATA%\OZFA\DiskControl` | `Data\` beside the executable |
 | Start Menu and uninstall entry | yes | no |
@@ -24,7 +24,7 @@ first. That is deliberate — this is a tool you reach for on a machine that is 
 
 ## Installer
 
-1. Run `OZFA-Disk-Control-v1.3.0-Setup.exe`.
+1. Run `OZFA-Disk-Control-v1.4.0-Setup.exe`.
 2. Windows SmartScreen may warn that the publisher is unrecognised — the release is not
    code-signed. Choose **More info → Run anyway** if you are satisfied the download is genuine;
    the checksums are published with the release.
@@ -36,7 +36,7 @@ first. That is deliberate — this is a tool you reach for on a machine that is 
    - **Start when I sign in to Windows.** This writes the same registry entry the application's
      own Settings page manages, so the two always agree, and it is removed when you uninstall.
    - **The shared library server.** Only needed if this machine will host the optional shared
-     library for other workstations. See the README.
+     library for other workstations. See [the README](../README.md#running-the-server).
 
 ### Uninstalling
 
@@ -54,7 +54,7 @@ record of every disk it has ever seen. To remove those as well, delete:
 
 ## Portable
 
-1. Unzip `OZFA-Disk-Control-v1.3.0-Portable.zip` anywhere — a USB stick, a technician's folder, a
+1. Unzip `OZFA-Disk-Control-v1.4.0-Portable.zip` anywhere — a USB stick, a technician's folder, a
    network share you have write access to.
 2. Run `OzfaDiskControl.exe`.
 

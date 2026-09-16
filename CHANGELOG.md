@@ -1,5 +1,97 @@
 # Changelog
 
+## 1.4.0 — 2026-09-16
+
+Built from shop feedback on 1.3: one hot-swap bug that 1.3 did not fully close, and the workflow
+around the disks a technician is actually handling.
+
+### Fixed
+
+- **A replaced disk could still show the previous drive's health or name until Rescan.** 1.3 held
+  back a health record that belonged to a drive which had just been pulled, but it only remembered
+  that for one refresh. In the shop the sequence is rarely one refresh: the drive is pulled, the
+  application refreshes with the bay empty, and a few seconds later a different drive goes in. By
+  then nothing was wearing the old record any more, so there was nothing left to hold, and Hard
+  Disk Sentinel's unchanged, stale record matched the new drive by position. Pressing Rescan before
+  Sentinel had looked again did not hold anything either, because the device list had not changed
+  during the Rescan itself.
+
+  A held record now stays held across any number of refreshes, manual Rescan included, until there
+  is evidence that the provider has read the hardware again: it publishes a different set of
+  devices, or the held record's own readings (temperature, power-on time, bytes written, SMART raw
+  values) move, which can only happen when the drive answering to that record is attached. Nothing
+  else releases it. A disk whose reading is being withheld says **Waiting for provider rescan**, and
+  history and alerting skip it rather than recording "no health data" for a drive that has not been
+  judged.
+
+### Known limitation
+
+- **How quickly figures appear after a swap is decided by Hard Disk Sentinel.** Sentinel publishes
+  no scan time and no marker for a removed drive, so a record it has not refreshed is
+  indistinguishable from a current one. OZFA now refuses to show such a record rather than guess,
+  but it cannot make Sentinel rescan sooner, and polling faster would not change what Sentinel
+  publishes. The definitive fix is the planned native SMART/NVMe provider, which reads the drive
+  itself and has no second scan schedule to wait for.
+
+### Changed
+
+- **The drive's own name is used everywhere the disk list uses it.** Behind a USB dock or adapter,
+  the Library, the Alerts page, alert labels and report titles now show the drive's real model and
+  serial, with the enclosure named alongside. The library entry keeps what Windows reported, shows
+  it as "Windows saw", and can be searched by either. Correlation, history keys and the
+  verification before a destructive operation still use Windows' identity only.
+- **Alerts are organized by disk.** The page lists devices on the left, most urgent first, with
+  unread counts and the worst unread severity; selecting one shows only that disk's alerts, newest
+  first, and the selected alert's full detail beneath. "All devices" keeps the chronological view.
+  Alerts raised before 1.4 under an adapter's name are grouped under the drive's name.
+- **Disk list rows stay put during hot-swaps.** Internal disks are listed first in disk-number
+  order; external devices keep the row they first took, and a drive pushed into a dock bay takes the
+  row of the one it replaced instead of jumping to the bottom. Internal and external headings appear
+  when both kinds are attached.
+- **Stable and Beta update channels.** Settings → Updates offers a channel; Stable is the default.
+  Stable now also skips a release the publisher has marked as a pre-release, not only one with a
+  pre-release version number.
+
+### Added
+
+- **Failing-media warning before destructive preparation.** When a destructive plan is reviewed for
+  a drive that Sentinel rates Critical, or that has pending sectors, bad sectors, or serious
+  reallocations, the Tools page names each sign of failure and explains what writing to it costs.
+  Neither dry run nor execution runs until the warning is acknowledged. It is a warning, never a
+  refusal.
+- **Interrupted-operation audit.** A real disk operation records its intent before it touches the
+  device and replaces that entry with the result afterwards. If the application dies part-way, the
+  next launch marks the entry **Interrupted** with the device's state unknown, and raises a critical
+  alert for that disk.
+- **"Why no health data?"** One click on Overview or Diagnostics saves a single archive with the
+  provider's status, every record it published and its fields, each disk's matching verdict and the
+  recent logs, and shows it in File Explorer. Serials, unique identifiers, device paths, volume
+  labels, the machine name and the Windows account are replaced with consistent placeholders before
+  anything is written.
+- **Match confidence on the disk list.** Health figures attached on limited evidence — a model and
+  capacity resemblance, or the provider's device number behind an adapter — carry a small ≈ marker
+  whose tooltip gives the reason.
+
+### Release
+
+- `SHA256SUMS.txt` is written with LF line endings, so `sha256sum -c` works on Linux and Git Bash.
+  Checksum files for 1.0.0–1.3.0 are unchanged.
+- The history database moves to schema version 6 (new columns only). An older build refuses a
+  newer database rather than risk it, so after running 1.4 a 1.3 installation will not open the
+  same history.
+
+### Not verified on hardware
+
+- The hot-swap hold and the stable row order are tested against constructed machines that
+  reproduce the reported sequences, including a removal and an insertion in separate refreshes and
+  a Rescan pressed in between. They have not been run against a real dock with Hard Disk Sentinel
+  running: the development machine has no USB-to-SATA adapter.
+- **No real format or repartition has been executed against a disposable disk.** Unchanged since
+  1.2: planning, the safety checks, the confirmation flow, the dry run and now the intent audit are
+  complete and tested; the moment the backend writes has only been exercised against a test
+  backend, and the Tools page still says so.
+- Secure Erase and NVMe Sanitize are not included.
+
 ## 1.3.0 — 2026-09-10
 
 Two problems found using 1.2 on the bench, one of them serious.

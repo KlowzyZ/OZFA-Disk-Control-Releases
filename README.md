@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.3.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.4.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 Published installers and checksums are available as GitHub Release assets in this repository.
 
@@ -46,12 +46,13 @@ attached device at once, and the pages behind them are one press away.
 - **Remembers**: event-driven history per device, a searchable library of every disk the
   installation has ever seen, and a "what changed" comparison between any two inspections.
 - **Warns**: provider-neutral alerting with thresholds you set, duplicate suppression, and
-  Windows notifications.
+  Windows notifications, organized by disk so one drive's alerts are one click away.
 - **Tests, without writing**: quick check, read/verify, a full surface scan with a response-time
   block map, and a sequential read benchmark with temperature measured either side.
 - **Prepares disks**: initialize, GPT/MBR, create and delete partitions, drive letters, volume
   labels, online/offline and quick format — each one planned, checked against the safety rules,
-  shown in full, and confirmed before it runs.
+  shown in full, and confirmed before it runs, with an extra warning when the drive is failing
+  and an audit entry that survives the application being closed part-way.
 - **Reports**: a technician report per device as PDF, JSON or CSV.
 - **Shares, optionally**: a local-first shared library across your own LAN, off by default.
 - **Keeps working when the window is closed**, monitoring from the notification area.
@@ -63,8 +64,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.3.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.3.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.4.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.4.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -78,10 +79,11 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.3.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.4.0-Setup.exe -Algorithm SHA256
 ```
 
-Compare the result with the line for that file in `SHA256SUMS.txt`.
+Compare the result with the line for that file in `SHA256SUMS.txt`. From 1.4.0 the file also works
+with `sha256sum -c SHA256SUMS.txt` on Linux or Git Bash.
 
 The release is **not code-signed**, so Windows SmartScreen will warn that the publisher is
 unrecognised. Verify the checksum, then choose **More info → Run anyway**.
@@ -112,11 +114,20 @@ several seconds to describe the new hardware. OZFA Disk Control waits for it rat
   disk then reports no health data.
 - **A reading from a disk that has been removed is never shown on the disk that replaced it.** When
   drives are swapped in a dock, Windows gives the new drives the disk numbers the old ones had while
-  Hard Disk Sentinel is still describing the old ones. Those readings are held back until it has
-  rescanned. A drive that reports its own serial number keeps its reading throughout, including when
-  it is moved to a different port.
+  Hard Disk Sentinel is still describing the old ones. Those readings are held back — across any
+  number of refreshes, and through a manual Rescan — until Sentinel demonstrably reads the hardware
+  again. A disk whose reading is held reads **"Waiting for provider rescan"**. A drive that reports
+  its own serial number keeps its reading throughout, including when it is moved to a different port.
+- **How soon figures appear after a swap is decided by Hard Disk Sentinel's own scan.** Sentinel
+  publishes no scan time, so OZFA Disk Control declines to show a record it cannot prove is current
+  rather than guessing. If a disk shows no health data, **Why no health data?** on its Overview saves
+  a diagnostic archive — provider status, published records, matching verdicts and recent logs, with
+  serial numbers and names replaced by placeholders — that explains why.
+- **Rows stay in place.** External disks keep their row in the disk list, and a drive pushed into a
+  dock bay takes the row of the drive it replaced.
 - **Disks in a USB adapter or dock are named after the drive**, as Hard Disk Sentinel reads it, even
-  when the adapter reports a plausible-looking name of its own. The adapter is shown alongside. This
+  when the adapter reports a plausible-looking name of its own — in the disk list, the Library, the
+  Alerts page and reports. The adapter is shown alongside. This
   is display only: which disk a destructive operation targets is always decided by the identity
   Windows reports, and the Tools page shows that identity.
 
@@ -172,7 +183,7 @@ There are exactly two outbound connections the application can ever make:
   whatsoever about your disks. It reads a version number and stops there; it **cannot download an
   update, cannot install one, and cannot run anything**. Opening a release happens in your own
   browser. Turn it off entirely in Settings → Updates; everything else works with no network at
-  all.
+  all. The **Stable** channel is the default and never offers a pre-release; **Beta** is opt-in.
 - **The shared library**, to a server address you type in yourself. Off by default.
 
 Everything the application records — disk identities, inspections, SMART snapshots, alerts, test
