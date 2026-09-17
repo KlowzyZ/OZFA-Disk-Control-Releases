@@ -1,5 +1,109 @@
 # Changelog
 
+## 1.5.0 — 2026-09-18
+
+A technician-workflow release. The bench is the place this application is actually used, and until
+now it only ever looked at one disk at a time.
+
+### Added
+
+- **Bench Mode.** Select several attached devices and run read-only checks across all of them in
+  one pass: a health and SMART snapshot, a quick read check, a surface read scan and a sequential
+  read benchmark. Results fill into the same list that was ticked, one row per device, with the
+  real model, the serial where the device reported a trustworthy one, health, temperature, the
+  checks performed, how long each took, and a Pass / Warning / Fail verdict with the sentence
+  behind it.
+
+  **Bench Mode cannot write to a disk.** That is structural rather than a default: the batch path
+  has no way to express a destructive step. Erasing, partitioning and formatting stay on the Tools
+  page, one device at a time, behind the planner, the target check and the typed confirmation —
+  selecting six drives at once is the worst possible moment to make a write one click easier.
+
+- **Scheduling that does not saturate one cable.** Four drives in a dock look like four independent
+  devices and are, for everything except bandwidth: they reach the machine through one USB link.
+  Reading them together produces four throughput figures that are each a quarter of the truth and
+  four surface scans whose slow blocks are the other three drives' fault. Devices are grouped by
+  the adapter or hub they share and worked through one at a time; independent devices run together,
+  up to a configurable number of groups. Grouping applies only when a throughput measurement was
+  selected — a quick check cannot be distorted by contention, only slightly slowed. When the device
+  tree cannot be read, external devices are treated as sharing one link, which is the conservative
+  reading, and the page says so.
+
+- **Work orders.** A ticket number, a customer reference and technician notes can be attached to a
+  bench session and to any device in the Library. They are printed on the bench summary, stamped on
+  to test results and disk-operation audit entries as they happen, and searchable from the Library
+  box. All three are free text a person typed: nothing is looked up anywhere.
+
+- **A printable bench summary.** A finished pass opens as a document with the session, the job, the
+  outcome counts, a device table, a table of every check with the range and block size its numbers
+  came from, and the findings behind each verdict. It goes through the same preview and the same
+  PDF, JSON and CSV writers as a single-device report, and every block is labelled as measurement
+  or as interpretation. Past sessions can be reopened and printed again.
+
+- **Trend analysis over stored inspections.** The History page gains a "Direction of travel" panel
+  that reads the whole stored range rather than the last two inspections: which way health,
+  reallocated, pending, weak and bad sectors have moved, over how many readings and what period.
+
+  It says "not enough evidence" readily. Two readings an hour apart are reported as what was seen
+  and carry no rate; a rate per thirty days is only computed once the readings span more than a
+  day, and a direction is only called settled at four readings over a week. Current state and
+  historical trend are always two separate statements, because "three pending sectors" and "pending
+  sectors have gone from zero to three since March" lead to different decisions. Nothing is
+  extrapolated — there is no projected failure date and no remaining-life estimate of this
+  application's own making anywhere in the feature.
+
+- **A versioned USB adapter catalogue.** Keyed by the USB vendor and product ids read from the
+  device tree, which are assigned by USB-IF and burned into the bridge, unlike the SCSI strings
+  further down the stack that an enclosure vendor rewrites freely. It explains why a device looks
+  the way it does — a bridge that answers with its own name, a serial that is absent or shared
+  across units, a bridge that does not pass SMART through — and records whether each entry was
+  observed on hardware by this project or is expected from the bridge family.
+
+  **It never relaxes a rule.** Every behaviour it describes was already handled generically, and an
+  adapter that is not listed behaves exactly as it did before the catalogue existed. Its version is
+  stamped on every bench session so a note on an old summary can be traced to what the store said
+  at the time.
+
+- **"Always start OZFA Disk Control as administrator", off by default.** Everything except disk
+  management works unelevated, and the disk tools already offer to restart elevated at the moment
+  they need to, so off stays the recommendation. On a dedicated bench machine a consent prompt at
+  startup beats one in the middle of a job. It cannot loop: it does nothing when the process is
+  already elevated, nothing when the launch is itself the result of an elevation request, and
+  nothing on a sign-in launch, where there would be nobody to answer the prompt. A dismissed prompt
+  leaves the application running normally and Settings says why.
+
+### Fixed
+
+- **A disk-management plan could be sent to the wrong device if Windows renumbered it.** Every
+  platform call names its target by physical disk number, and a plan records the number the device
+  had when it was reviewed. The check before a run correctly followed the device rather than the
+  number — renumbering after a hot-plug is normal and must not block correct work — but the run
+  itself still issued the old number. A plan reviewed while a drive was Disk 2 would have been
+  executed against whatever held Disk 2 at that moment.
+
+  Operations are now addressed to the identity the check re-resolved, and the target is
+  re-identified immediately before **every** step that writes, not only before the first. A device
+  pulled out between two steps of a running plan, or replaced at the same number, stops the run;
+  the steps that already ran stand and the result says plainly that the device is part-way through.
+  An enumeration that could not complete also stops the run, because a device list that failed to
+  read is not evidence that anything is still there.
+
+### Changed
+
+- The Library search box also matches a ticket number and a customer reference, and the entry
+  editor takes both alongside the notes and tags.
+- Diagnostics reports Bench Mode and the adapter catalogue's version.
+- The toolbar keeps its navigation labels down to a slightly wider window, because Bench joined the
+  rail. Below that it still sheds labels rather than buttons.
+
+### Still not verified on hardware
+
+- **A real format or repartition has still never been run against a disposable disk.** The planner,
+  the safety checks, the confirmation flow, the target re-identification and the dry run are
+  complete and covered by tests, including the cases added above; what has not happened is the
+  backend actually writing to metal. The Tools page says so at the moment a real run is selected,
+  and will keep saying so until a disk can be sacrificed to prove it.
+
 ## 1.4.0 — 2026-09-16
 
 Built from shop feedback on 1.3: one hot-swap bug that 1.3 did not fully close, and the workflow

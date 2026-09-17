@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.4.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.5.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 Published installers and checksums are available as GitHub Release assets in this repository.
 
@@ -49,6 +49,15 @@ attached device at once, and the pages behind them are one press away.
   Windows notifications, organized by disk so one drive's alerts are one click away.
 - **Tests, without writing**: quick check, read/verify, a full surface scan with a response-time
   block map, and a sequential read benchmark with temperature measured either side.
+- **Works a whole bench at once**: select several devices and run the read-only checks across all
+  of them in one pass, scheduled so that drives sharing one adapter do not measure each other,
+  with a Pass / Warning / Fail verdict per device and a printable summary. Bench Mode cannot write
+  to a disk — there is no destructive step in it to enable.
+- **Carries the job**: a ticket number, a customer reference and technician notes travel with a
+  device and with a bench session, on to the Library, the audit trail and the printed summary.
+- **Reads the direction of travel**: what the stored inspections say about how health and the
+  sector counters have moved, kept separate from what they are now, and never extrapolated into a
+  prediction.
 - **Prepares disks**: initialize, GPT/MBR, create and delete partitions, drive letters, volume
   labels, online/offline and quick format — each one planned, checked against the safety rules,
   shown in full, and confirmed before it runs, with an extra warning when the drive is failing
@@ -64,8 +73,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.4.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.4.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.5.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.5.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -79,7 +88,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.4.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.5.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`. From 1.4.0 the file also works
@@ -150,12 +159,18 @@ This application can destroy data. Everything below is enforced in code and cove
 - **A drive letter alone never selects a target.** Identity is resolved to a physical device.
 - Every destructive plan is **shown in full** — model, serial, capacity, physical disk number and
   the affected partitions — and **confirmed explicitly** before anything is written.
-- The target is **re-checked against the device immediately before execution**, including whether
-  the running Windows has come to depend on it since the plan was built.
+- The target is **re-checked against the device immediately before execution, and again before
+  every step that writes**, including whether the running Windows has come to depend on it since
+  the plan was built. An operation follows the device, not the disk number it had when the plan was
+  reviewed — Windows reassigns those whenever anything is plugged in. A device pulled out mid-run,
+  replaced at the same number, or a device list that could not be read all stop the run where it
+  is.
 - **An ambiguous identity fails closed**, never open.
 - **Needing administrator rights is never reported as protection.** It is a separate state with its
   own way out — *Continue as administrator* restarts the application elevated and reopens the same
-  device, then asks for the plan to be built and confirmed again against a fresh scan.
+  device, then asks for the plan to be built and confirmed again against a fresh scan. Normal
+  startup is not elevated; Settings offers an off-by-default *Always start as administrator* for a
+  dedicated bench machine, which changes when the consent prompt appears and nothing else.
 - The shared library **only ever receives records**. Nothing on a network can start an operation,
   run a test or reach a disk on this machine.
 
