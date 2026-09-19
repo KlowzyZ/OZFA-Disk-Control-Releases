@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.5.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.6.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 Published installers and checksums are available as GitHub Release assets in this repository.
 
@@ -62,6 +62,17 @@ attached device at once, and the pages behind them are one press away.
   labels, online/offline and quick format — each one planned, checked against the safety rules,
   shown in full, and confirmed before it runs, with an extra warning when the drive is failing
   and an audit entry that survives the application being closed part-way.
+- **Quick Format Disk**: right-click a device, read one confirmation that names it and lists every
+  partition it will destroy, tick one box. All partitions are removed, one is created across the
+  whole disk and formatted, from defaults you set once. The dialog is short because the decisions
+  were moved into Settings, not because the checks were removed: the device is still refused when
+  Windows depends on it, still re-identified immediately before every write, and the run still
+  stops if the disk has been unplugged or swapped for another one.
+- **Manages disks where you look at them**: right-click menus on devices and on partitions, each
+  entry enabled only where it is valid and disabled with the reason on hover rather than hidden; a
+  Partitions page that accounts for the whole device, unallocated space included, as a summary
+  line, a proportional map and a table; and a read-only Properties window carrying every
+  identifier the application holds.
 - **Reports**: a technician report per device as PDF, JSON or CSV.
 - **Shares, optionally**: a local-first shared library across your own LAN, off by default.
 - **Keeps working when the window is closed**, monitoring from the notification area.
@@ -73,8 +84,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.5.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.5.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.6.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.6.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -88,7 +99,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.5.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.6.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`. From 1.4.0 the file also works
@@ -158,7 +169,10 @@ This application can destroy data. Everything below is enforced in code and cove
   explicit confirmation. What they earn is a warning naming exactly what is about to be destroyed.
 - **A drive letter alone never selects a target.** Identity is resolved to a physical device.
 - Every destructive plan is **shown in full** — model, serial, capacity, physical disk number and
-  the affected partitions — and **confirmed explicitly** before anything is written.
+  the affected partitions — and **confirmed explicitly** before anything is written. Quick Format
+  Disk is confirmed by one acknowledgement rather than a typed phrase, which is a change of
+  ceremony and nothing else: every check listed here applies to it unchanged, and the
+  acknowledgement is enforced where the work happens, not by a greyed-out button.
 - The target is **re-checked against the device immediately before execution, and again before
   every step that writes**, including whether the running Windows has come to depend on it since
   the plan was built. An operation follows the device, not the disk number it had when the plan was
@@ -177,9 +191,11 @@ This application can destroy data. Everything below is enforced in code and cove
 > ### ⚠ Real destructive execution is not yet verified on hardware
 >
 > The planner, the safety checks, the confirmation flow and the dry run are complete and covered by
-> tests. A **real format or repartition has so far only been executed against a test backend**,
-> because no disposable disk was available during development. The application says so at the point
-> a real run is chosen. Treat a real run as unproven, and use a disk you can afford to lose.
+> tests, including every refusal Quick Format Disk can produce. A **real format or repartition has
+> so far only been executed against a test backend**, because no disposable disk was available
+> during development. The application says so at the point a real run is chosen, on the Tools page
+> and in the Quick Format dialog. Treat a real run as unproven, and use a disk you can afford to
+> lose.
 >
 > The 1.2 protection rules themselves were checked against real hardware: the system and boot disk
 > is refused with its dependencies named, and a secondary disk carrying a leftover Microsoft

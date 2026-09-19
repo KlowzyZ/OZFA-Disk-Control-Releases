@@ -1,5 +1,101 @@
 # Changelog
 
+## 1.6.0 — 2026-09-20
+
+A disk-management release. Everything needed to prepare a disk was already here and took a page,
+two dropdowns, a review, a typed phrase and a mode switch to reach. This release makes the common
+case one menu entry and one confirmation, and leaves every check that stands behind it exactly
+where it was.
+
+### Added
+
+- **Quick Format Disk.** Whole-disk preparation in one confirmation: every existing partition
+  removed, a fresh partition table written, one partition created across the whole disk and
+  quick-formatted, and OZFA re-reads the machine afterwards. Reachable by right-clicking a device
+  in the disk list, and from a button on the Partitions page.
+
+  The dialog shows the physical disk number, model, serial and capacity, lists every partition it
+  is about to destroy with its letter, label, file system and size, states what will exist
+  afterwards, and enumerates the steps. Below all of it is one checkbox — *I understand that all
+  data and partitions on this disk will be deleted* — and the button stays dead until it is
+  ticked.
+
+  **No phrase is typed, and nothing else was relaxed to achieve that.** The device is still
+  refused outright when the running Windows depends on it; a device whose identity cannot be
+  established is still refused as ambiguous; the machine is still re-enumerated immediately before
+  the run and the device re-identified before *every* write step, so a disk that has been
+  unplugged, renumbered or swapped for another one stops the operation part-way rather than being
+  followed; a drive showing failing media still raises its own acknowledgement; and administrator
+  rights are still reported separately from protection, in different words, with an offer to
+  restart elevated. The acknowledgement itself is enforced by the executor, not only by the
+  dialog's disabled button.
+
+  The acknowledgement is the *complete* confirmation for this workflow. Quick Format never asks
+  for a typed phrase, whatever **Settings › Disk tools › Confirmation level** is set to — a fast
+  path that sometimes grew a second gate would be one nobody could predict without opening
+  Settings first. The confirmation level continues to govern every other destructive workflow,
+  Prepare disk included.
+
+- **Settings › Quick Format Defaults.** Partition style, file system, allocation unit, volume
+  label, and whether the new volume takes the next free drive letter or is left unmounted.
+  Defaults are GPT, NTFS, the file system's own allocation unit, the next available letter and
+  the label `Data`. The page restates the whole recipe as one sentence, because the point of these
+  settings is that they are not shown again at the moment they are applied. MBR is offered and
+  carries its 2 TB caveat on screen; FAT32 is not, because Windows will not create a FAT32 volume
+  above 32 GB and a default that is refused on nearly every disk is not a default.
+
+- **Context menus on devices and partitions.** Right-clicking a row in the disk list offers Open,
+  Properties, Quick Format Disk, Initialize Disk, Create Partition and Bring Online / Take
+  Offline. Right-clicking a row on the Partitions page offers Open, Properties, Change and Remove
+  Drive Letter, Change Volume Label, Create Partition, Format Partition, Delete Partition and
+  Quick Format Disk.
+
+  A right-click selects the row it lands on before the menu opens, so what the menu acts on is
+  always what the rest of the window is showing. An entry that is not valid for the selection is
+  disabled and keeps the reason in its tooltip — "this disk has no unallocated space", "this
+  partition carries no mounted volume", "PROTECTED: the running Windows uses this partition" —
+  rather than disappearing. Destructive entries are red and weighted; a disabled one drops to
+  muted grey, because "you cannot do this" outranks "this is dangerous". Every entry except Open,
+  Properties and Quick Format hands the work to the Tools page with the workflow and partition
+  already chosen: the menu is a faster route to the planner, never a way around it.
+
+- **A Partitions page that accounts for the whole device.** A summary line — partition style,
+  capacity, partition count, allocated, unallocated, online state, read-only — then a proportional
+  map, then a table in which unallocated space is a row like any other. A disk whose free space
+  was only implied by offsets that did not meet now states it in three places. Sizes, free space
+  and offsets are right-aligned so a column can be compared at a glance.
+
+- **Properties.** A read-only window with every identifier the application holds for a device —
+  model, serial, firmware, unique ID, device path, bus, media, sector sizes — its layout summary,
+  and, when a partition was right-clicked, that partition and its volume. Where a USB enclosure
+  answered Windows with its own name, the window says so and says which identity destructive
+  targeting uses.
+
+### Changed
+
+- Quick Format Disk is confirmed by acknowledgement rather than by a typed phrase, and by the
+  acknowledgement alone: the confirmation level no longer applies to it. Every other whole-disk
+  workflow, including Prepare disk from a profile, is unchanged and still demands the phrase —
+  and still demands it for every write when the level is raised.
+- The disk-tool defaults and the Quick Format defaults are separate settings with separate pages.
+  The first are starting points for forms a technician then edits; the second are the whole of
+  what a menu entry does to a disk.
+
+### Fixed
+
+- Context-menu entries would not have shown their destructive colour or their disabled state: the
+  application-wide text colour overrode the colour each entry set for itself, in both themes. The
+  same class of bug as the 1.0 toolbar-contrast fix, caught in a render check before it shipped.
+
+### Still not verified on hardware
+
+Unchanged from 1.5.0 and now covering one more workflow. Planning, the protection verdict, the
+target re-identification, the confirmation flow and the audit trail are complete and covered by
+tests, including every refusal Quick Format can produce. What has never run is a Windows storage
+call that actually changes a partition table: every disk on the development machine holds real
+data and is protected. The notice on the Tools page and in the Quick Format dialog says so, and
+stays until the write path has been carried out on a disposable disk.
+
 ## 1.5.0 — 2026-09-18
 
 A technician-workflow release. The bench is the place this application is actually used, and until
