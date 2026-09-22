@@ -1,5 +1,99 @@
 # Changelog
 
+## 1.7.0 — 2026-09-23
+
+An advanced disk operations release. Drives can now be asked to erase themselves in firmware —
+ATA Secure Erase, NVMe Sanitize, NVMe Format — and every drive can be asked what it supports
+before anything is offered. The erase path is the existing destructive path with more gates on
+it, not a second one beside it.
+
+### Added
+
+- **Secure erase / sanitize**, a new workflow on the Tools page and a new entry on the device
+  context menu. Five methods: ATA Secure Erase, ATA Enhanced Secure Erase, NVMe Sanitize (Crypto
+  Erase), NVMe Sanitize (Block Erase) and NVMe Format (cryptographic erase). Each is issued through
+  the interface Windows documents for it: ATA pass-through for the ATA Security commands, and the
+  storage stack's reinitialize-media request for NVMe Sanitize and Format.
+
+  Every method is listed for every drive, and one that cannot be used says why in the drive's own
+  terms: security-frozen by the firmware at start-up, a password already set, locked, attempts
+  exhausted, the sanitize action not reported in SANICAP, a controller that may hold other
+  namespaces, a sanitize already in progress, a Windows build too old to name the sanitize method,
+  or a drive behind a USB bridge. Nothing is offered on assumption: a drive whose identify data
+  could not be read is offered nothing, with the reason the query failed.
+
+  The plan dismounts the disk, issues the erase, brings the disk back and re-reads the machine. It
+  always demands the typed phrase. It is refused as **PROTECTED** for anything the running Windows
+  depends on, exactly like every other destructive workflow, and needing administrator rights is
+  still reported separately with the offer to restart elevated.
+
+- **Two new gates specific to erasing.** The drive's erase-relevant state — protocol, path,
+  security flags, sanitize state, namespace count, serial — is captured when the plan is reviewed
+  and read from the drive again immediately before the run starts and again immediately before
+  the erase command itself, after the dismount. Anything different refuses the step. And erases
+  run **one disk at a time**: a second erase requested while one is running is refused, never
+  queued.
+
+- **Checked afterwards, and recorded as checked.** A command that returned is not treated as an
+  erased drive. Blocks at the start, middle and end of the drive are sampled and hashed before the
+  erase (the data itself is never kept), and afterwards the drive is re-identified, its own state
+  read back — no password set and not locked for ATA, a successful last sanitize for NVMe — the
+  partition table looked for, and the same blocks compared. The result is one of *all checks
+  passed*, *partially verified*, *command completed; not independently verified*, *verification
+  failed* or *not verified*, with every check listed and a check that could not be made stated as
+  not performed rather than counted as passed. Every record carries the same sentence about what
+  none of this can prove.
+
+- **Erase records.** Erases are stored in the existing operation audit trail with the method, the
+  work order, the verification level and each check's finding, including interrupted runs. An
+  interrupted ATA erase names the temporary password on the line that survives, so a drive left
+  locked by a power cut can be unlocked from any machine. Each erase has a printable record —
+  preview, PDF, JSON, CSV — that states it is a record of what the drive reported and what was
+  read back, not a certificate.
+
+- **Drive capabilities** in the Properties window: protocol, the path to the drive, SMART support
+  as the drive reports it and whether a health reading was obtained, TRIM/UNMAP, media, the ATA
+  Security state, ATA and NVMe sanitize support, NVMe Format support, namespaces, and every erase
+  method with its availability or reason. Read with queries that cannot change the drive, most of
+  them without administrator rights. **Copy troubleshooting** puts the whole section on the
+  clipboard as text.
+
+- **Diagnostics › Drive capabilities and adapters.** Reads every attached drive and explains, per
+  drive, why SMART, identity, Secure Erase and Sanitize are or are not available — including what
+  the adapter catalogue knows about the USB bridge in front of it.
+
+- **USB adapter catalogue, revision 2.** Thirteen new entries, identified by their USB vendor and
+  product ids, including the USB-to-NVMe bridges (JMicron JMS583, Realtek RTL9210, ASMedia
+  ASM2362), the common SATA bridges and older USB 2.0 bridges with unreliable pass-through. Every
+  entry is marked as expected from the chip rather than observed on a specific enclosure. A bridge
+  that is not listed is still explained, still handled exactly as before, and nothing is assumed
+  about it.
+
+### Fixed
+
+- **Report tables were blank in the preview window.** The panel that lays table cells out reported
+  a height of zero when placed in a list, so every table in the report preview — the SMART table,
+  the bench device list, the check list — showed its headings and no rows. PDF, JSON and CSV
+  exports were unaffected. Present since 1.0.0; found while checking the erase record's preview.
+- **The Tools page could discard a reviewed plan on its own.** Rebuilding a dropdown's list made
+  the dropdown write an empty choice back, which the page took as the technician changing it. It
+  now ignores the list being rebuilt, and the result of a run that has just finished stays on
+  screen when the device list refreshes afterwards.
+
+### Not yet verified on hardware
+
+**No erase command has been sent to a drive by this build.** Every structure and control code in
+the erase backend is taken from the Windows SDK headers and the ATA and NVMe specifications; the
+capability queries share that code path and were run against real NVMe drives, which is how the
+Identify Controller and Sanitize Status layouts were confirmed. The planning, the gates, the
+refusals, the one-at-a-time rule and the verification are covered by tests against constructed
+drives, including a drive that becomes frozen between the dismount and the erase and an erase that
+the drive reports complete but did not carry out. The Tools page says this at the moment a real
+run is chosen, and the erase record says it on every copy. The procedure that would verify it on
+disposable drives is written down with the existing disk-write validation plan.
+
+History schema 8.
+
 ## 1.6.0 — 2026-09-20
 
 A disk-management release. Everything needed to prepare a disk was already here and took a page,

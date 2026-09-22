@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.6.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.7.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 Published installers and checksums are available as GitHub Release assets in this repository.
 
@@ -73,6 +73,16 @@ attached device at once, and the pages behind them are one press away.
   Partitions page that accounts for the whole device, unallocated space included, as a summary
   line, a proportional map and a table; and a read-only Properties window carrying every
   identifier the application holds.
+- **Firmware erase**: ATA Secure Erase, ATA Enhanced Secure Erase, NVMe Sanitize and NVMe Format,
+  offered only where the drive reports support and can accept the command now, one disk at a time,
+  and checked afterwards — the drive re-identified, its own erase state read back, the partition
+  table looked for and sampled blocks compared with what they held before. Every erase gets a
+  printable record that states what was checked and what none of it can prove.
+- **Drive capabilities**: what each drive supports and what state it is in — protocol, path,
+  SMART, TRIM, ATA Security (frozen, locked, password), sanitize and format support — read from the
+  drive with queries that cannot change it, with every "no" explained. Diagnostics adds a
+  troubleshooting report that says, per drive, why SMART, identity or an erase is unavailable
+  through a particular USB bridge.
 - **Reports**: a technician report per device as PDF, JSON or CSV.
 - **Shares, optionally**: a local-first shared library across your own LAN, off by default.
 - **Keeps working when the window is closed**, monitoring from the notification area.
@@ -84,8 +94,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.6.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.6.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.7.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.7.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -99,7 +109,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.6.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.7.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`. From 1.4.0 the file also works
@@ -185,17 +195,22 @@ This application can destroy data. Everything below is enforced in code and cove
   device, then asks for the plan to be built and confirmed again against a fresh scan. Normal
   startup is not elevated; Settings offers an off-by-default *Always start as administrator* for a
   dedicated bench machine, which changes when the consent prompt appears and nothing else.
+- **A firmware erase runs on one disk at a time**, re-reads the drive's security and sanitize state
+  immediately before the command and refuses on any change, is never sent through a USB bridge,
+  and never unlocks, bypasses or removes a password it did not set. A command that returned is not
+  reported as an erased drive: what was checked afterwards, and what each check found, is recorded.
 - The shared library **only ever receives records**. Nothing on a network can start an operation,
   run a test or reach a disk on this machine.
 
 > ### ⚠ Real destructive execution is not yet verified on hardware
 >
 > The planner, the safety checks, the confirmation flow and the dry run are complete and covered by
-> tests, including every refusal Quick Format Disk can produce. A **real format or repartition has
-> so far only been executed against a test backend**, because no disposable disk was available
-> during development. The application says so at the point a real run is chosen, on the Tools page
-> and in the Quick Format dialog. Treat a real run as unproven, and use a disk you can afford to
-> lose.
+> tests, including every refusal Quick Format Disk and the firmware erase can produce. A **real
+> format, repartition or firmware erase has so far only been executed against a test backend**,
+> because no disposable disk was available during development — no Secure Erase, Sanitize or
+> Format command has been sent to a drive by 1.7.0. The application says so at the point a real
+> run is chosen, on the Tools page and in the Quick Format dialog, and every erase record says so
+> too. Treat a real run as unproven, and use a disk you can afford to lose.
 >
 > The 1.2 protection rules themselves were checked against real hardware: the system and boot disk
 > is refused with its dependencies named, and a secondary disk carrying a leftover Microsoft
