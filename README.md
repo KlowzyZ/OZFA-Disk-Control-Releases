@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.7.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.8.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 Published installers and checksums are available as GitHub Release assets in this repository.
 
@@ -53,8 +53,19 @@ attached device at once, and the pages behind them are one press away.
   of them in one pass, scheduled so that drives sharing one adapter do not measure each other,
   with a Pass / Warning / Fail verdict per device and a printable summary. Bench Mode cannot write
   to a disk — there is no destructive step in it to enable.
-- **Carries the job**: a ticket number, a customer reference and technician notes travel with a
-  device and with a bench session, on to the Library, the audit trail and the printed summary.
+- **Runs the job**: a Jobs page per ticket, with the drives attached to it and everything recorded
+  about them as one timeline; an active job whose ticket is stamped on new work; a technician
+  report and a plainer customer report; and printable drive labels with a QR code that finds the
+  drive's record again. Named bays for the ports on your bench, saved test profiles (Quick Check,
+  CCTV Intake, Resale Readiness, and your own), and optional read-only intake of drives plugged
+  into a bay while a job is active.
+- **Explains the device**: a Device page with the chain of devices between the disk and the
+  computer, the negotiated USB speed and whether UASP is in use, capacity figures that expose a
+  Host Protected Area, a configuration overlay or a 2 TiB bridge limit, plain-language findings
+  for offline, read-only, zero-size and unreadable disks, and Locate Drive to flash the right
+  drive's activity light.
+- **Runs the drive's own self-tests**: SMART short and extended on SATA drives, Device Self-test on
+  NVMe drives, with the result taken from the drive's own log.
 - **Reads the direction of travel**: what the stored inspections say about how health and the
   sector counters have moved, kept separate from what they are now, and never extrapolated into a
   prediction.
@@ -84,6 +95,9 @@ attached device at once, and the pages behind them are one press away.
   troubleshooting report that says, per drive, why SMART, identity or an erase is unavailable
   through a particular USB bridge.
 - **Reports**: a technician report per device as PDF, JSON or CSV.
+- **Keeps its records safe**: automatic, checked backups of the history, export and a guarded
+  restore, erase records sealed into a tamper-evident chain, and settings that move between
+  workstations.
 - **Shares, optionally**: a local-first shared library across your own LAN, off by default.
 - **Keeps working when the window is closed**, monitoring from the notification area.
 
@@ -94,8 +108,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.7.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.7.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.8.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.8.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -109,7 +123,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.7.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.8.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`. From 1.4.0 the file also works
@@ -199,6 +213,14 @@ This application can destroy data. Everything below is enforced in code and cove
   immediately before the command and refuses on any change, is never sent through a USB bridge,
   and never unlocks, bypasses or removes a password it did not set. A command that returned is not
   reported as an erased drive: what was checked afterwards, and what each check found, is recorded.
+- **Encryption is stated, never assumed.** Before a plan destroys partitions, their BitLocker
+  state is read; an encrypted or locked partition gets a warning, and one whose state Windows would
+  not report gets *encryption unknown* — never "not encrypted".
+- **A USB stick or card with no serial number stays refused** until it is unplugged and plugged back
+  in while the Tools page watches. Only that exact device coming back, with nothing else changing,
+  allows destructive work on it, for 30 minutes and with a warning.
+- **Intake and Bench only read.** Automation in a named bay runs a Bench pass, which has no way to
+  write, and never touches a drive that was already plugged in when the application started.
 - The shared library **only ever receives records**. Nothing on a network can start an operation,
   run a test or reach a disk on this machine.
 
@@ -208,9 +230,11 @@ This application can destroy data. Everything below is enforced in code and cove
 > tests, including every refusal Quick Format Disk and the firmware erase can produce. A **real
 > format, repartition or firmware erase has so far only been executed against a test backend**,
 > because no disposable disk was available during development — no Secure Erase, Sanitize or
-> Format command has been sent to a drive by 1.7.0. The application says so at the point a real
+> Format command has been sent to a drive by 1.8.0. The application says so at the point a real
 > run is chosen, on the Tools page and in the Quick Format dialog, and every erase record says so
-> too. Treat a real run as unproven, and use a disk you can afford to lose.
+> too. Treat a real run as unproven, and use a disk you can afford to lose. **Tools › Validate…**
+> walks through proving each workflow on a disk you declare disposable, and keeps a record of what
+> was actually tested.
 >
 > The 1.2 protection rules themselves were checked against real hardware: the system and boot disk
 > is refused with its dependencies named, and a secondary disk carrying a leftover Microsoft
@@ -233,8 +257,11 @@ There are exactly two outbound connections the application can ever make:
 - **The shared library**, to a server address you type in yourself. Off by default.
 
 Everything the application records — disk identities, inspections, SMART snapshots, alerts, test
-results and the disk-operation audit trail — is stored locally in a SQLite database, under your
-user profile for the installed edition and beside the executable for the portable one.
+results, jobs and the disk-operation audit trail — is stored locally in a SQLite database, under
+your user profile for the installed edition and beside the executable for the portable one, and
+its backups are kept in a folder beside it. A drive label's QR code holds only the drive's Library
+reference and its serial number. An exported settings file contains no machine name, no access
+token and no history.
 
 ## Documentation
 

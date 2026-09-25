@@ -1,5 +1,145 @@
 # Changelog
 
+## 1.8.0 — 2026-09-26
+
+A shop-floor release. Jobs and work orders, named bays, saved test profiles, drive labels and a
+customer-facing report; the drive's own self-tests; a Device page that explains how a drive is
+attached and why it misbehaves; and a history that backs itself up, can be restored, and seals
+its erase records so a changed one shows. Nothing in this release adds a way to write to a disk.
+
+### Added
+
+- **Jobs.** A new Jobs page: open one per ticket, attach the drives that came in on it, and read
+  everything recorded about them — inspections, tests, bench passes, disk operations, erase
+  records, capability snapshots — as one timeline. One job can be *active*: tests, bench passes and
+  disk operations started while it is active are stamped with its ticket, and the status bar says
+  so. Attaching a drive also puts the job's ticket and customer on its Library entry. Closing a job
+  keeps its records and its reports.
+
+- **Two job reports.** A technician report with the whole timeline, and a shorter customer report:
+  each drive's verdict (*Good*, *Needs attention*, *Failing* or *Not assessed*) with the one-line
+  reason, the checks performed, and any erase records by number. Verdicts are drawn only from what
+  was recorded — the last health reading and the latest run of each test — and *Good* needs both a
+  healthy reading and a clean test. The customer report says that a result is not a warranty.
+
+- **Drive labels.** Printable 57 × 32 mm labels with model, serial, capacity, verdict, date,
+  ticket and a QR code holding the drive's Library reference (`OZ-` and ten hex digits) and its
+  serial. Typing or scanning the reference into the Library search finds the drive's record. The
+  QR encoder is written into the application; its output was decoded by an independent decoder at
+  every version it produces. Labels are previewed at print size and printed through the Windows
+  print dialog, one per page.
+
+- **Named bays.** Name the port a drive is plugged into from its Device page — "Bay 3", "Front
+  dock" — and every drive later plugged into the same port shows that name in the disk list. A bay
+  is the port's place in the Windows device tree, not an identity: nothing that writes, correlates
+  health or keys history reads it, and a drive whose port has no name is simply unmapped.
+
+- **Test profiles.** Bench offers Quick Check, CCTV Intake and Resale Readiness, and saves your
+  own. A profile sets the checks, the range, the drive's own self-test and a capability snapshot;
+  everything it sets stays editable. Every profile reads only.
+
+- **Read-only intake.** Optional, off by default, set up under **Settings › Workshop**. A drive
+  plugged into a bay marked for intake while a job is active is attached to the job and checked
+  with the intake profile as a Bench pass — which can only read. Drives already attached when the
+  application starts are left alone, and a drive that arrives with no active job is reported, not
+  quietly skipped.
+
+- **The drive's own self-tests.** SMART short and extended self-tests on ATA drives and Device
+  Self-test on NVMe drives, started from the Tests page or a Bench profile. Progress and the
+  result come from the drive's own self-test log; the drive's log is shown beside the history;
+  a test the drive or its adapter cannot run says why (most USB bridges cannot pass the command),
+  and a Bench pass does not hold that against the drive. A self-test started before the
+  application closed is recorded from the drive's own log the next time that drive's Tests page is
+  opened.
+
+- **Device page.** A new disk tab: the chain of devices between the disk and the computer, the
+  port, the negotiated USB speed, UASP or Bulk-Only, whether the device and the port can do USB 3,
+  and hubs in between; the capacity Windows reports against the drive's own user area, native
+  maximum and factory maximum, with Host Protected Area, Device Configuration Overlay and 2 TiB
+  bridge limits named when the figures show them; and findings, most serious first — device
+  problem codes, offline and read-only disks, zero-size devices, USB links slower than the device
+  can do, and partitions Windows cannot mount, with what their first sectors hold (NTFS, exFAT,
+  FAT, ReFS, BitLocker, ext, XFS, Btrfs, HFS+, APFS, LUKS, LVM, swap, ISO 9660, blank) where the
+  drive can be read. Detection only: the page never changes a Host Protected Area, an overlay or
+  anything else it finds.
+
+- **Locate Drive.** On the Device page: 30 seconds of scattered reads in bursts, so the right
+  drive's activity light flashes in a rhythm no idle drive has. Reading only.
+
+- **Encryption in destructive warnings.** Before a plan that destroys partitions, BitLocker state
+  is read for each of them. Encrypted or locked partitions get an *ENCRYPTED* warning; a partition
+  whose state Windows would not report — Windows reports BitLocker only to administrators — gets
+  *ENCRYPTION UNKNOWN*, never "not encrypted". A warning, not a refusal.
+
+- **Unplug-and-reconnect confirmation** for serial-less USB sticks and SD cards, on the Tools
+  page. A device with no trustworthy serial stays refused until it is unplugged and reconnected
+  while the page watches; if exactly that device went away and came back and nothing else changed,
+  destructive work on it is allowed for 30 minutes, with a warning in every plan. Another device
+  changing, two identical devices, or Windows' arrival stamp moving cancels it. The identity used
+  for the target check is unchanged.
+
+- **Frozen-drive guidance.** An ATA drive refused for Secure Erase because its firmware froze
+  security at start-up now gets the steps that usually unfreeze it and a **Check again** that
+  re-reads the drive and says what changed.
+
+- **Hardware Validation Runner.** **Tools › Validate…** walks through proving the destructive
+  workflows on a disk you declare disposable by typing its serial number. It runs nothing: each
+  step names the Tools workflow to run, and the runner records your verdict with what the audit
+  trail showed for that step. The record lists what was not tested. A disk the running Windows
+  depends on can never be declared.
+
+- **History backups.** The history is copied with SQLite's online backup and checked with
+  `integrity_check` every 24 hours (ten automatic copies kept), before every schema upgrade, before
+  every restore, and on request. **Settings › Local database** lists the copies, exports one, and
+  restores one: the file is checked first, what it holds is shown, the current history is backed
+  up, and the application restarts.
+
+- **Sealed erase records.** Every erase record is sealed with a SHA-256 hash over a canonical form
+  of the record and the previous record's hash, and numbered (`ER-000001`, …). Records from 1.7 are
+  sealed on first start. The erase record shows whether its seal still matches, and **Settings ›
+  Local database › Check now** checks the whole chain. The seal shows tampering; it is not a
+  certificate, and the record says so.
+
+- **Capability snapshots.** What a drive reports it can do — erase support, security state,
+  capacity figures — is kept whenever it changes, shown on the History page and in the disk report.
+
+- **Settings transfer.** Export preferences and saved test profiles to a file and import them on
+  another workstation. Nothing that names the machine, no sync access token, no bays and no history
+  are included, and intake is never switched on by an import.
+
+### Changed
+
+- The Tools and shell view models were split by concern; behaviour is unchanged.
+- The navigation rail gained Jobs; its labels give way to icons slightly earlier on narrow windows.
+
+### Fixed
+
+- **Times shown in UTC.** The Tests page history, the Tools page audit trail, Bench sessions and the
+  interrupted-operation alert printed stored times without converting them, so they were off by
+  the machine's UTC offset. All now show local time.
+- **A self-test was recorded as passed when it was only started.** The Tests page recorded a pass
+  as soon as the drive accepted the command. The result now comes from the drive's own log, and a
+  test whose result could not be observed says so.
+
+### Not yet verified on hardware
+
+- **Self-tests** were read on this build's development machine — the NVMe self-test log and
+  support flags of two NVMe drives — but **no self-test was started** on real hardware, and no ATA
+  self-test path has been exercised.
+- **READ NATIVE MAX and DCO IDENTIFY** (Host Protected Area and overlay detection on ATA drives)
+  have not been run against an ATA drive; NVMe namespace capacity was read and matched Windows.
+- **BitLocker state** was read only unelevated, where Windows refuses it and the warning correctly
+  says *unknown*.
+- **USB speed, UASP and the hub query** were read against a USB device on the development machine,
+  not against a USB storage device. The **partition signature** read and **Locate Drive** need
+  administrator rights and were not run.
+- **The unplug-and-reconnect confirmation** has been exercised against simulated device lists, not
+  a real card reader.
+- As in 1.7, **no destructive command has been sent to a drive by this build**. The Hardware
+  Validation Runner exists to do that deliberately, on a disk declared disposable.
+
+History schema 9.
+
 ## 1.7.0 — 2026-09-23
 
 An advanced disk operations release. Drives can now be asked to erase themselves in firmware —
