@@ -4,7 +4,7 @@
 
 **Professional disk diagnostics, history and management for Windows technicians.**
 
-Version 1.8.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
+Version 1.9.0 · Windows 10 20H1 or later, 64-bit · No .NET installation required
 
 Published installers and checksums are available as GitHub Release assets in this repository.
 
@@ -17,8 +17,9 @@ Published installers and checksums are available as GitHub Release assets in thi
 OZFA Disk Control is a desktop workstation for people who work with disks: HDDs, SSDs, NVMe
 drives, USB storage, and disks being prepared for CCTV and NVR duty. It identifies every device
 properly rather than by drive letter, reads its condition, remembers what it has seen over time,
-tests it without writing to it, prepares it when you ask, and refuses to touch anything it cannot
-positively identify.
+tests it — reading by default, writing only when a reviewed plan is confirmed — takes it from intake
+to a verdict, prepares or erases it when you ask, and refuses to touch anything it cannot positively
+identify.
 
 It is dense on purpose. Health, temperature, protection status and capacity are visible for every
 attached device at once, and the pages behind them are one press away.
@@ -49,6 +50,17 @@ attached device at once, and the pages behind them are one press away.
   Windows notifications, organized by disk so one drive's alerts are one click away.
 - **Tests, without writing**: quick check, read/verify, a full surface scan with a response-time
   block map, and a sequential read benchmark with temperature measured either side.
+- **Burn-in and counterfeit detection** *(new in 1.9, not yet hardware validated)*: a write-verify
+  burn-in that writes every block with the patterns you choose and reads every block back; a fast,
+  sampled capacity check for USB sticks and cards that report more space than they have; and
+  position-tagged sectors that name the address a wrongly-returned block came from, so a counterfeit
+  is found and its real size estimated. Live progress, throughput, time left and a block map while
+  it runs; every failed range, the coverage and a five-word verdict afterwards. Nothing is ever
+  passed on the strength of a write that returned success.
+- **Overwrite erase** *(new in 1.9, not yet hardware validated)*: zeros, ones or a seeded random
+  pattern over every block, with a full read-back, for drives whose firmware erase is unavailable.
+  Its record says plainly what an overwrite cannot reach — remapped sectors, and on SSDs and flash
+  the over-provisioned areas — and never calls it a purge.
 - **Works a whole bench at once**: select several devices and run the read-only checks across all
   of them in one pass, scheduled so that drives sharing one adapter do not measure each other,
   with a Pass / Warning / Fail verdict per device and a printable summary. Bench Mode cannot write
@@ -57,8 +69,13 @@ attached device at once, and the pages behind them are one press away.
   about them as one timeline; an active job whose ticket is stamped on new work; a technician
   report and a plainer customer report; and printable drive labels with a QR code that finds the
   drive's record again. Named bays for the ports on your bench, saved test profiles (Quick Check,
-  CCTV Intake, Resale Readiness, and your own), and optional read-only intake of drives plugged
-  into a bay while a job is active.
+  CCTV Intake, CCTV Qualification, Resale Readiness, Flash Authenticity, and your own), and optional
+  read-only intake of drives plugged into a bay while a job is active.
+- **Takes a drive from intake to a verdict**: give a job a profile and every drive on it is
+  qualified stage by stage — identify, inspect, read tests, the destructive stage the profile calls
+  for, verdict — as *Pass*, *Warning*, *Fail*, *Incomplete* or *Not assessed*. A burn-in or erase the
+  profile requires is only ever opened on the Tools page for one drive, where it is reviewed and
+  confirmed; no profile, bench pass or intake can start one.
 - **Explains the device**: a Device page with the chain of devices between the disk and the
   computer, the negotiated USB speed and whether UASP is in use, capacity figures that expose a
   Host Protected Area, a configuration overlay or a 2 TiB bridge limit, plain-language findings
@@ -108,8 +125,8 @@ behave identically; the only difference is where they keep their data.
 
 | | |
 | --- | --- |
-| **`OZFA-Disk-Control-v1.8.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
-| **`OZFA-Disk-Control-v1.8.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
+| **`OZFA-Disk-Control-v1.9.0-Setup.exe`** | Normal Windows installation: Start Menu entry, uninstall entry, optional desktop shortcut, optional sign-in start. Data lives under `%LOCALAPPDATA%\OZFA\DiskControl`. |
+| **`OZFA-Disk-Control-v1.9.0-Portable.zip`** | Unzip and run. Data, settings and logs live in a `Data` folder beside the executable, so the whole installation travels with the folder and leaves nothing behind. |
 
 Both are self-contained — the .NET runtime is inside the download. That is deliberate: this is a
 tool you reach for on a machine that is already in trouble, and "install the .NET Desktop Runtime
@@ -123,7 +140,7 @@ Full instructions, including how to uninstall and what is left behind, are in
 `SHA256SUMS.txt` is attached to every release. On Windows:
 
 ```powershell
-Get-FileHash .\OZFA-Disk-Control-v1.8.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\OZFA-Disk-Control-v1.9.0-Setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the line for that file in `SHA256SUMS.txt`. From 1.4.0 the file also works
@@ -219,6 +236,12 @@ This application can destroy data. Everything below is enforced in code and cove
 - **A USB stick or card with no serial number stays refused** until it is unplugged and plugged back
   in while the Tools page watches. Only that exact device coming back, with nothing else changing,
   allows destructive work on it, for 30 minutes and with a warning.
+- **The write engine can only be reached through a confirmed plan.** A disk is opened for writing
+  only against a single-use authorization issued for one step, immediately after the target was
+  re-verified. Every volume on the disk is locked and dismounted first, the opened device is checked
+  once more for its disk number, exact capacity and serial, and it is re-identified every 30 seconds
+  while the run is under way: a swap, a renumbering, a disconnect, or a check that cannot be made
+  stops the run. One erase or write run at a time, never queued.
 - **Intake and Bench only read.** Automation in a named bay runs a Bench pass, which has no way to
   write, and never touches a drive that was already plugged in when the application started.
 - The shared library **only ever receives records**. Nothing on a network can start an operation,
@@ -228,13 +251,14 @@ This application can destroy data. Everything below is enforced in code and cove
 >
 > The planner, the safety checks, the confirmation flow and the dry run are complete and covered by
 > tests, including every refusal Quick Format Disk and the firmware erase can produce. A **real
-> format, repartition or firmware erase has so far only been executed against a test backend**,
-> because no disposable disk was available during development — no Secure Erase, Sanitize or
-> Format command has been sent to a drive by 1.8.0. The application says so at the point a real
-> run is chosen, on the Tools page and in the Quick Format dialog, and every erase record says so
-> too. Treat a real run as unproven, and use a disk you can afford to lose. **Tools › Validate…**
-> walks through proving each workflow on a disk you declare disposable, and keeps a record of what
-> was actually tested.
+> format, repartition, firmware erase or write-engine run has so far only been executed against
+> test backends and simulated drives**, because no disposable disk was available during
+> development — no Secure Erase, Sanitize or Format command has been sent to a drive, and **no block
+> has been written to a real drive by the 1.9.0 write engine** (burn-in, capacity check, overwrite).
+> The application says so at the point a real run is chosen, on the Tools page and in the Quick
+> Format dialog, and every erase and write-test record says so too. Treat a real run as unproven,
+> and use a disk you can afford to lose. **Tools › Validate…** walks through proving each workflow
+> on a disk you declare disposable, and keeps a record of what was actually tested.
 >
 > The 1.2 protection rules themselves were checked against real hardware: the system and boot disk
 > is refused with its dependencies named, and a secondary disk carrying a leftover Microsoft

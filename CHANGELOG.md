@@ -1,5 +1,150 @@
 # Changelog
 
+## 1.9.0 — 2026-10-09
+
+The write engine, and intake to verdict. A dedicated, isolated engine that writes every block of a
+drive and reads it back — for a burn-in, for finding counterfeit capacity, and for overwriting a
+drive whose firmware erase is unavailable — behind the same planner, confirmation, executor and
+target re-identification as every other destructive workflow. And a qualification sequence on the
+Jobs page that takes a drive from identification to a verdict against a profile.
+
+**NOT YET HARDWARE VALIDATED.** No block has been written to a real drive by this build. The write
+engine was developed and tested only against simulated drives and temporary image files; the
+Windows device code that opens a disk for writing has never run against hardware. The application
+says so wherever a write run is offered, and every record it produces says so.
+
+### Added
+
+- **Write-verify burn-in** (Tools). Writes every block of the device with each chosen pattern and
+  reads every block back, comparing it with what was written. Patterns: position-tagged random (the
+  default, and the only one that can detect address aliasing), 0xAA, 0x55, 0xFF and 0x00, each one
+  pass, repeated for up to three cycles (eight passes at most). A write that returned success is
+  never counted as evidence: every verdict rests on the read-back.
+
+- **Position-tagged sectors.** Every sector of a tagged pass begins with the run's random seed, the
+  byte offset it was written to and the pass, under a check, followed by pseudo-random content
+  derived from them. A sector read back is classified exactly: as written; written to *another*
+  address (aliasing — the read names the address it came from); an earlier pass's data (the write
+  did not land); another run's data; a constant (nothing kept); or corrupted (the bytes that differ
+  are counted).
+
+- **Fake-capacity detection.** A full tagged burn-in finds a device that wraps its addresses at any
+  size, and one that keeps nothing past its real size, and estimates what it really holds — from
+  the common divisor of the aliasing distances, or from where the run of lost data begins.
+
+- **Capacity check** (Tools). The fast, sampled check: tagged 64 KiB probes at offset zero, every
+  power of two, points either side of them, and a power-of-two grid across the claimed capacity —
+  all written, the cache flushed, then all read back in reverse order. It finds counterfeits that
+  wrap at a power-of-two or grid boundary and those that discard data past their real size. It is
+  always reported as a sample — *Pass (sampled)*, coverage *Partial* — and never as a complete
+  validation; the full burn-in is that.
+
+- **Overwrite erase** (Tools). Zeros, ones or a seeded random pattern over every block the drive
+  exposes, with an optional full read-back (on by default). For HDDs behind adapters, USB sticks and
+  cards where a firmware erase is unavailable. The plan states the limit for the device in front of
+  it — on SSDs and flash: *not a sanitize or a purge*; on hard disks: remapped sectors are not
+  reached — and so does every record. Overwrites are erase records: stored in the audit trail,
+  checked afterwards (every block overwritten, full read-back, same drive present, no partition
+  table), sealed into the erase-record chain and printed through the existing erase record, which
+  now says who performed the erase and which limit applies.
+
+- **Live progress and the block map.** While a write run is under way the Tools page shows the
+  phase, the pass, progress, position, current and phase throughput, elapsed time, the time left
+  (only once there is enough of the run to estimate from), problems so far, and when the device was
+  last re-identified — with a block map coloured by write and read results. Afterwards: the
+  verdict, the coverage, the capacity finding, what was measured, why a run stopped, and every
+  failed range (problem, offset, length, pass, what was found), with the printable record.
+
+- **Write-test records.** A burn-in or capacity check is filed with the device's tests as a
+  destructive test, with the bytes written and read back, mismatched sectors, the coverage, the
+  capacity finding and estimate, the block map, the five-level verdict and the audit entry of the
+  operation that carried it out. A new printable *Write-verify record* / *Capacity check record*
+  prints the verdict beside its coverage every time. History schema 10.
+
+- **Intake to verdict** (Jobs). A job can name a profile, and every drive on it is qualified
+  against it, stage by stage: Identify, Inspect, Read tests, the destructive stage the profile calls
+  for, Verdict. The destructive stage is only ever *opened* from here — the button takes the
+  technician to the Tools page on that drive with the workflow chosen, and nothing is planned or run
+  until the plan is reviewed and confirmed there. The technician report carries every drive's stages.
+
+- **Profiles for the job.** *CCTV Qualification* (read checks, then a full burn-in) and *Flash
+  Authenticity* (quick checks, then a capacity check) join Quick Check and CCTV Intake; *Resale
+  Readiness* now calls for an erase before release. A profile's destructive stage is never run by
+  the profile, a Bench pass or intake — Bench says so in amber when one is chosen — and it travels
+  with exported profiles.
+
+- **Hardware validation steps B1–B6** in the Hardware Validation Runner (**Tools › Validate…**), for
+  proving the write engine on a disposable drive.
+
+### Changed
+
+- **Verdicts use the five Bench words everywhere.** A drive on a job, a label and the customer
+  report now read *Pass*, *Warning*, *Fail*, *Incomplete* or *Not assessed* (1.8 said *Good*,
+  *Needs attention* and *Failing*). *Incomplete* is new: a write test that stopped, or a stage the
+  job's profile requires that has not run. A write test that stopped is the latest word on that
+  test, so an older pass no longer speaks for the drive.
+
+- **One whole-device run at a time.** The firmware-erase gate now covers the write engine too: a
+  second erase or write run is refused while one is under way, never queued. A write run also takes
+  the read-test lease, so it cannot start while a test or a Bench pass is reading, nothing can be
+  tested while it runs, and a drive running its own self-test is not written to.
+
+- The block map distinguishes *written, not yet read back* and *read back wrong* from reads.
+
+- Saved profiles keep the destructive stage of the profile they were made from.
+
+### Safety
+
+- The write engine is kept apart from everything that reads: the interface every read test uses is
+  unchanged and still has no write operation at all.
+- A device can be opened for writing only against a write authorization, which only the
+  executor can create, for one step of one confirmed plan, immediately after the target was
+  re-resolved and re-verified. It is single-use and expires after two minutes.
+- Before the first block is written the handle itself is asked which disk it is, how large it is
+  (exactly the planned capacity), which serial it reports (it must agree when both are present) and
+  whether it accepts writes. Every volume on the disk is locked and dismounted first and held so
+  for the whole run; a volume that cannot be locked, or that spans another disk, refuses the run
+  before anything is written.
+- While a run is under way the device is re-identified every 30 seconds and at the end of every
+  write phase. A device that cannot be re-identified for three minutes, answers as another device,
+  or moves to another disk number stops the run. A disconnect stops it as a disconnect, never as
+  bad blocks; only errors that describe the media are recorded as bad blocks, and anything
+  unrecognised stops the run.
+- The planner refuses a write run on a disk the running Windows depends on (PROTECTED), a device
+  without a trustworthy identity, a device that does not report its sector size, a read-only disk,
+  and RAID, Storage Spaces, virtual and iSCSI volumes. Every plan destroys the whole disk and demands
+  the typed phrase; BitLocker and failing-media warnings apply as for every destructive plan.
+- An interrupted run says how far it got: progress is written to the operation's intent line every
+  30 seconds, and the next launch's *Interrupted* record quotes it — for an overwrite, that the
+  drive must be treated as **not** erased. Runs cannot be resumed and nothing claims they can.
+- Firmware erase is unchanged.
+
+### Fixed
+
+- A profile's description named its range twice.
+
+### Tests
+
+- The engine against simulated drives: healthy, a sector that reads back wrong, write and read
+  faults narrowed to their ranges, writes that silently do not land, counterfeits that wrap at an
+  arbitrary size and at a power of two, counterfeits that keep nothing past their real size (full
+  and sampled), a drive pulled mid-run, cancellation, a re-identification that fails or throws, a
+  device of the wrong size, and verified and unverified overwrites. One run uses a temporary image
+  file.
+- The executor: dry runs never open a device, the authorization is single-use and cannot be made
+  outside it, a swapped or renumbered device stops the run, a second run is refused, elevation and a
+  missing engine refuse cleanly. The service: audit and test records, the sealed overwrite record,
+  the test-lease refusal, and the interrupted overwrite.
+- Render tests for the write-engine panels and the Jobs qualification in both themes. No test
+  enumerates or opens a real device.
+
+### Not yet verified on hardware
+
+- **Everything the write engine does to a real device**: locking and dismounting volumes, opening a
+  physical disk for writing, the handle checks, every write, flush and read-back, the disconnect and
+  identity checks during a run. Verified only against simulated drives and image files.
+- Everything listed under 1.8.0 and 1.7.0 as not verified on hardware remains so.
+
 ## 1.8.0 — 2026-09-26
 
 A shop-floor release. Jobs and work orders, named bays, saved test profiles, drive labels and a
